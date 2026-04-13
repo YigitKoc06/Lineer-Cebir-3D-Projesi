@@ -752,6 +752,11 @@ body:active {
     #mobile-panel-toggle {
         display: inline-flex;
     }
+
+    /* Hide desktop-only info chips on mobile */
+    .info-chip.desktop-only {
+        display: none;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════
