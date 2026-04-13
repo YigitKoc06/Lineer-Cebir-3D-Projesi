@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineer Cebir ve Anti-Yerçekimi Görselleştirmesi</title>
+    <meta name="description" content="3D interaktif lineer cebir ve anti-yerçekimi görselleştirmesi - dönüşüm matrisleri, izdüşüm ve vektör alanları">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="loading-screen">
+        <div class="loader-content">
+            <div class="loader-ring"></div>
+            <div class="loader-text">MATRİS YÜKLENIYOR...</div>
+            <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+        </div>
+    </div>
+
+    <canvas id="scene"></canvas>
+
+    <!-- HUD Overlay -->
+    <div id="hud">
+        <div id="title-hud">
+            <h1>LİNEER CEBİR VE ANTİ-YERÇEKİMİ GÖRSELLEŞTİRMESİ</h1>
+            <p class="subtitle">Matematiksel Dönüşüm Uzayı</p>
+        </div>
+
+        <div id="matrix-panel" class="hud-panel left-panel">
+            <div class="panel-header">ROTASYON MATRİSİ</div>
+            <div class="matrix-display" id="rotation-matrix">
+                <div class="matrix-bracket left">[</div>
+                <div class="matrix-values">
+                    <div class="matrix-row">
+                        <span id="m00">0.866</span>
+                        <span id="m01">-0.500</span>
+                        <span id="m02">0.000</span>
+                    </div>
+                    <div class="matrix-row">
+                        <span id="m10">0.500</span>
+                        <span id="m11">0.866</span>
+                        <span id="m12">0.000</span>
+                    </div>
+                    <div class="matrix-row">
+                        <span id="m20">0.000</span>
+                        <span id="m21">0.000</span>
+                        <span id="m22">1.000</span>
+                    </div>
+                </div>
+                <div class="matrix-bracket right">]</div>
+            </div>
+            <div class="matrix-label">M = Rz(θ) · Ry(φ)</div>
+            <div class="angle-display">
+                <span>θ = <span id="theta-val">30.0</span>°</span>
+                <span>φ = <span id="phi-val">0.0</span>°</span>
+            </div>
+        </div>
+
+        <div id="transform-panel" class="hud-panel right-panel">
+            <div class="panel-header">DÖNÜŞÜM VEKTÖRLERİ</div>
+            <div class="vector-info">
+                <div class="vector-row">
+                    <span class="vec-label">Konum:</span>
+                    <span class="vec-val" id="pos-vec">[0.0, 2.5, 0.0]</span>
+                </div>
+                <div class="vector-row">
+                    <span class="vec-label">Ölçek:</span>
+                    <span class="vec-val" id="scale-vec">[1.0, 1.0, 1.0]</span>
+                </div>
+                <div class="vector-row">
+                    <span class="vec-label">Kaldırma:</span>
+                    <span class="vec-val" id="lift-vec">[0.0, 1.0, 0.0]</span>
+                </div>
+            </div>
+            <div class="separator"></div>
+            <div class="panel-header small">ANTİ-YERÇEKİMİ KUVVETİ</div>
+            <div class="force-bar">
+                <div class="force-fill" id="force-fill"></div>
+                <span class="force-val" id="force-val">F = 9.81 m/s²</span>
+            </div>
+        </div>
+
+        <div id="shape-label-original" class="floating-label blue">
+            ÖZGÜN ŞEKİL
+        </div>
+        <div id="shape-label-transformed" class="floating-label orange">
+            DÖNÜŞMÜŞ ŞEKİL<br><small>(ANTİ-YERÇEKİMİ ETKİSİ)</small>
+        </div>
+        <div id="projection-label" class="floating-label green">
+            İZDÜŞÜM DÜZLEMİ
+        </div>
+
+        <div id="bottom-bar">
+            <div class="info-chip">
+                <span class="chip-icon">◈</span>
+                <span>Fare ile döndür</span>
+            </div>
+            <div class="info-chip">
+                <span class="chip-icon">⊕</span>
+                <span>Scroll ile yakınlaş</span>
+            </div>
+            <div class="info-chip active" id="auto-rotate-chip" onclick="toggleAutoRotate()">
+                <span class="chip-icon">↻</span>
+                <span>Otomatik Döndür: AÇIK</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Matrix Chips -->
+    <div id="floating-matrices">
+        <div class="float-matrix fm1">
+            <div class="fm-header">Ölçekleme</div>
+            <div class="fm-content">S·v = λv</div>
+        </div>
+        <div class="float-matrix fm2">
+            <div class="fm-header">Determinant</div>
+            <div class="fm-content">det(M) = <span id="det-val">1.000</span></div>
+        </div>
+        <div class="float-matrix fm3">
+            <div class="fm-header">Öz Değer</div>
+            <div class="fm-content">λ₁ = <span id="eigen-val">0.866+0.5i</span></div>
+        </div>
+        <div class="float-matrix fm4">
+            <div class="fm-header">İz (Trace)</div>
+            <div class="fm-content">tr(M) = <span id="trace-val">2.732</span></div>
+        </div>
+        <div class="float-matrix fm5">
+            <div class="fm-header">Norm</div>
+            <div class="fm-content">‖v‖ = <span id="norm-val">1.000</span></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
