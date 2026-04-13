@@ -139,11 +139,17 @@ function setupMobilePanels() {
     const toggleBtn = document.getElementById('mobile-panel-toggle');
     const matrixPanel = document.getElementById('matrix-panel');
     const transformPanel = document.getElementById('transform-panel');
+    const bottomBar = document.getElementById('bottom-bar');
 
     // Move panels into the drawer
     if (matrixPanel && transformPanel && drawer) {
         drawer.appendChild(matrixPanel);
         drawer.appendChild(transformPanel);
+    }
+
+    // Move toggle button inside bottom-bar (after the 3 chips)
+    if (toggleBtn && bottomBar) {
+        bottomBar.appendChild(toggleBtn);
     }
 
     // Toggle button behaviour
