@@ -713,17 +713,38 @@ body:active {
         font-size: 6px;
     }
 
-    /* ── Floating matrix chips: smaller ── */
-    .float-matrix {
-        transform: scale(0.75);
-        transform-origin: center;
+    /* ── Floating matrix chips: hide from fixed position (moved into drawer) ── */
+    #floating-matrices {
+        position: static;
+        display: none; /* hidden by default; shown when inside drawer */
     }
 
-    .fm1 { top: 18%; right: 2%; }
-    .fm2 { top: 50%; left: 2%; }
-    .fm3 { bottom: 35%; right: 3%; }
-    .fm4 { top: 30%; left: 3%; }
-    .fm5 { bottom: 30%; left: 6%; }
+    /* When floating-matrices are inside the drawer, show them as a grid */
+    #floating-matrices.in-drawer {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(0, 180, 255, 0.15);
+    }
+
+    #floating-matrices.in-drawer .float-matrix {
+        position: static;
+        transform: none;
+        animation: none;
+        opacity: 1;
+        background: rgba(5, 10, 30, 0.7);
+        border: 1px solid rgba(0, 180, 255, 0.15);
+        border-radius: 8px;
+        padding: 8px 12px;
+        backdrop-filter: blur(8px);
+    }
+
+    /* Make the last chip span full width if odd count */
+    #floating-matrices.in-drawer .float-matrix:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
 
     /* ── Bottom bar: all items in a row ── */
     #bottom-bar {
@@ -777,15 +798,6 @@ body:active {
     /* Hide floating labels on very small screens to reduce clutter */
     .floating-label {
         display: none;
-    }
-
-    /* Fewer floating matrix chips */
-    .fm3, .fm5 {
-        display: none;
-    }
-
-    .float-matrix {
-        transform: scale(0.65);
     }
 
     /* Stack chips vertically on tiny screens */

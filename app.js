@@ -139,12 +139,19 @@ function setupMobilePanels() {
     const toggleBtn = document.getElementById('mobile-panel-toggle');
     const matrixPanel = document.getElementById('matrix-panel');
     const transformPanel = document.getElementById('transform-panel');
+    const floatingMatrices = document.getElementById('floating-matrices');
     const bottomBar = document.getElementById('bottom-bar');
 
     // Move panels into the drawer
-    if (matrixPanel && transformPanel && drawer) {
-        drawer.appendChild(matrixPanel);
-        drawer.appendChild(transformPanel);
+    if (drawer) {
+        if (matrixPanel) drawer.appendChild(matrixPanel);
+        if (transformPanel) drawer.appendChild(transformPanel);
+
+        // Move floating matrix chips into the drawer as a group
+        if (floatingMatrices) {
+            floatingMatrices.classList.add('in-drawer');
+            drawer.appendChild(floatingMatrices);
+        }
     }
 
     // Move toggle button inside bottom-bar (after the 3 chips)
@@ -170,13 +177,6 @@ function setupMobilePanels() {
             toggleBtn.querySelector('.toggle-icon').textContent = '☰';
         }
     }, { passive: true });
-
-    // Update bottom bar text for touch
-    const chips = document.querySelectorAll('.info-chip span:not(.chip-icon)');
-    if (chips.length >= 2) {
-        chips[0].textContent = 'Parmakla döndür';
-        chips[1].textContent = 'Çimdikle yakınlaş';
-    }
 }
 
 // ─── Starfield ───
