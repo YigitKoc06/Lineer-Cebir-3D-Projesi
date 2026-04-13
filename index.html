@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lineer Cebir ve Anti-Yerçekimi Görselleştirmesi</title>
     <meta name="description" content="3D interaktif lineer cebir ve anti-yerçekimi görselleştirmesi - dönüşüm matrisleri, izdüşüm ve vektör alanları">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -107,6 +107,14 @@
             </div>
         </div>
     </div>
+
+    <!-- Mobile Panel Toggle Button -->
+    <button id="mobile-panel-toggle" aria-label="Panel aç/kapat">
+        <span class="toggle-icon">☰</span>
+    </button>
+
+    <!-- Mobile Panel Drawer (panels get moved here via JS on mobile) -->
+    <div id="mobile-panel-drawer"></div>
 
     <!-- Floating Matrix Chips -->
     <div id="floating-matrices">

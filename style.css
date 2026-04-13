@@ -34,6 +34,8 @@ html, body {
     font-family: var(--font-body);
     color: var(--text-primary);
     cursor: grab;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
 }
 
 body:active {
@@ -178,6 +180,7 @@ body:active {
         0 0 30px rgba(0, 100, 200, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 0.04);
     animation: panel-in 0.6s ease-out both;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
 }
 
 @keyframes panel-in {
@@ -511,18 +514,283 @@ body:active {
     75% { transform: translateY(-6px) rotate(0.3deg); opacity: 0.8; }
 }
 
-/* ─── Responsive ─── */
+/* ═══════════════════════════════════════════════════════════
+   MOBILE PANEL TOGGLE BUTTON
+   ═══════════════════════════════════════════════════════════ */
+#mobile-panel-toggle {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    bottom: 80px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--panel-border);
+    background: var(--panel-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--text-accent);
+    font-family: var(--font-display);
+    font-size: 18px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px rgba(0, 100, 200, 0.2), 0 4px 12px rgba(0,0,0,0.4);
+    transition: all 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#mobile-panel-toggle:active {
+    transform: scale(0.92);
+    background: rgba(0, 100, 200, 0.2);
+}
+
+#mobile-panel-toggle .toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+#mobile-panel-toggle.panels-open .toggle-icon {
+    transform: rotate(45deg);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE PANEL DRAWER (overlay container)
+   ═══════════════════════════════════════════════════════════ */
+#mobile-panel-drawer {
+    display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — MOBILE (max-width: 900px)
+   ═══════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
-    .left-panel, .right-panel {
+
+    /* ── Title: compact ── */
+    #title-hud {
+        top: 12px;
+        width: 90%;
+    }
+    #title-hud h1 {
+        font-size: 11px;
+        letter-spacing: 1px;
+    }
+    #title-hud .subtitle {
+        font-size: 9px;
+        letter-spacing: 3px;
+    }
+
+    /* ── Show the mobile toggle button ── */
+    #mobile-panel-toggle {
+        display: flex;
+    }
+
+    /* ── Mobile Panel Drawer ── */
+    #mobile-panel-drawer {
+        display: block;
         position: fixed;
-        top: auto;
-        bottom: 70px;
-        left: 10px;
-        right: 10px;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 90;
+        max-height: 55vh;
+        background: rgba(5, 8, 22, 0.92);
+        border-top: 1px solid var(--panel-border);
+        border-radius: 18px 18px 0 0;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 -4px 30px rgba(0, 60, 180, 0.15);
+        transform: translateY(100%);
+        transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 16px 12px 24px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #mobile-panel-drawer.open {
+        transform: translateY(0);
+    }
+
+    /* Drag handle indicator */
+    #mobile-panel-drawer::before {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(0, 180, 255, 0.3);
+        margin: 0 auto 14px;
+    }
+
+    /* ── Hide original panels from their desktop position ── */
+    .left-panel,
+    .right-panel {
+        position: static !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        bottom: auto !important;
         min-width: auto;
+        margin-bottom: 12px;
+        animation: none;
+        /* KEEP them visible — NEVER display: none */
+        display: block;
+        border-radius: 10px;
+        padding: 12px 14px;
+    }
+
+    .panel-header {
+        font-size: 10px;
+        letter-spacing: 1.5px;
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+    }
+
+    .panel-header.small {
+        font-size: 8px;
+    }
+
+    /* Shrink matrix for mobile readability */
+    .matrix-bracket {
+        font-size: 28px;
+    }
+
+    .matrix-row {
+        gap: 8px;
+    }
+
+    .matrix-row span {
+        font-size: 11px;
+        min-width: 38px;
+    }
+
+    .matrix-label {
+        font-size: 10px;
+    }
+
+    .angle-display {
+        font-size: 10px;
+    }
+
+    .vector-row {
+        font-size: 12px;
+    }
+
+    .vec-label {
+        font-size: 11px;
+    }
+
+    .vec-val {
+        font-size: 11px;
+    }
+
+    .force-val {
+        font-size: 9px;
+    }
+
+    /* ── Floating labels: smaller & repositioned ── */
+    .floating-label {
+        font-size: 7px;
+        letter-spacing: 1px;
+        padding: 4px 8px;
+    }
+
+    .floating-label.blue {
+        top: auto;
+        bottom: 42%;
+        left: 4%;
+    }
+
+    .floating-label.orange {
+        top: 20%;
+        right: 4%;
+    }
+
+    .floating-label.green {
+        bottom: 36%;
+    }
+
+    .floating-label small {
+        font-size: 6px;
+    }
+
+    /* ── Floating matrix chips: smaller ── */
+    .float-matrix {
+        transform: scale(0.75);
+        transform-origin: center;
+    }
+
+    .fm1 { top: 18%; right: 2%; }
+    .fm2 { top: 50%; left: 2%; }
+    .fm3 { bottom: 35%; right: 3%; }
+    .fm4 { top: 30%; left: 3%; }
+    .fm5 { bottom: 30%; left: 6%; }
+
+    /* ── Bottom bar: larger touch targets ── */
+    #bottom-bar {
+        bottom: 10px;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 94%;
+    }
+
+    .info-chip {
+        padding: 12px 18px;
+        font-size: 13px;
+        border-radius: 24px;
+        min-height: 44px;
+    }
+
+    .chip-icon {
+        font-size: 16px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   VERY SMALL SCREENS (max-width: 480px)
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+
+    #title-hud h1 {
+        font-size: 9px;
+        letter-spacing: 0.5px;
+    }
+
+    #title-hud .subtitle {
+        font-size: 8px;
+        letter-spacing: 2px;
+    }
+
+    /* Hide floating labels on very small screens to reduce clutter */
+    .floating-label {
         display: none;
     }
-    .floating-label { display: none; }
-    .float-matrix { display: none; }
-    #title-hud h1 { font-size: 12px; letter-spacing: 1px; }
+
+    /* Fewer floating matrix chips */
+    .fm3, .fm5 {
+        display: none;
+    }
+
+    .float-matrix {
+        transform: scale(0.65);
+    }
+
+    /* Stack chips vertically on tiny screens */
+    #bottom-bar {
+        flex-direction: column;
+        align-items: center;
+        bottom: 8px;
+        gap: 6px;
+    }
+
+    .info-chip {
+        width: 80%;
+        justify-content: center;
+    }
+
+    #mobile-panel-drawer {
+        max-height: 60vh;
+    }
 }

@@ -1,7 +1,30 @@
 /* ═══════════════════════════════════════════════════════════
    LİNEER CEBİR VE ANTİ-YERÇEKİMİ GÖRSELLEŞTİRMESİ
    Three.js 3D Interactive Visualization
+   — Mobile-Optimized Edition —
    ═══════════════════════════════════════════════════════════ */
+
+// ─── Mobile Detection ───
+const isMobile = (() => {
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const touchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const smallScreen = window.innerWidth <= 900;
+    const mobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    return (mobileUA || (touchDevice && smallScreen));
+})();
+
+// Performance tiers
+const PERF = {
+    particleCount:   isMobile ? 150  : 500,
+    starfieldCount:  isMobile ? 600  : 2000,
+    maxPixelRatio:   isMobile ? 1.0  : 2,
+    shadowsEnabled:  !isMobile,
+    gridDivisions:   isMobile ? 14   : 24,
+    energySegments:  isMobile ? 50   : 120,
+    projGridDiv:     isMobile ? 8    : 16,
+    floatingShapeCount: isMobile ? 3  : 6,
+    hudUpdateInterval:  isMobile ? 3  : 1,  // update HUD every N frames
+};
 
 // ─── Globals ───
 let scene, camera, renderer, controls;
@@ -12,6 +35,7 @@ let particles, energyLines = [];
 let vectorArrows = [];
 let autoRotate = true;
 let floatingShapes = [];
+let frameCount = 0;
 
 // ─── Colors ───
 const COLORS = {
@@ -32,7 +56,7 @@ function init() {
     // Scene
     scene = new THREE.Scene();
     scene.background = COLORS.dark;
-    scene.fog = new THREE.FogExp2(0x050510, 0.015);
+    scene.fog = new THREE.FogExp2(0x050510, isMobile ? 0.02 : 0.015);
 
     // Camera
     camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
@@ -41,26 +65,42 @@ function init() {
     // Renderer
     renderer = new THREE.WebGLRenderer({
         canvas: document.getElementById('scene'),
-        antialias: true,
-        alpha: false
+        antialias: !isMobile, // disable AA on mobile for performance
+        alpha: false,
+        powerPreference: isMobile ? 'low-power' : 'high-performance',
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, PERF.maxPixelRatio));
+
+    if (PERF.shadowsEnabled) {
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    } else {
+        renderer.shadowMap.enabled = false;
+    }
+
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.2;
 
-    // Controls
+    // Controls — optimized for touch
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
+    controls.dampingFactor = isMobile ? 0.08 : 0.05;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.5;
     controls.minDistance = 5;
     controls.maxDistance = 30;
     controls.maxPolarAngle = Math.PI * 0.85;
     controls.target.set(0, 1.5, 0);
+
+    // Touch-specific: one finger rotate, two-finger pinch zoom
+    controls.touches = {
+        ONE: THREE.TOUCH.ROTATE,
+        TWO: THREE.TOUCH.DOLLY_PAN,
+    };
+    controls.rotateSpeed = isMobile ? 0.6 : 1.0;
+    controls.zoomSpeed   = isMobile ? 0.8 : 1.0;
+    controls.panSpeed    = isMobile ? 0.6 : 1.0;
 
     // Build scene
     createStarfield();
@@ -77,6 +117,11 @@ function init() {
     // Events
     window.addEventListener('resize', onResize);
 
+    // Mobile panel drawer setup
+    if (isMobile) {
+        setupMobilePanels();
+    }
+
     // Hide loader
     setTimeout(() => {
         document.getElementById('loading-screen').classList.add('hidden');
@@ -86,9 +131,51 @@ function init() {
     animate();
 }
 
+// ═══════════════════════════════════════════════════════════
+// MOBILE PANEL DRAWER LOGIC
+// ═══════════════════════════════════════════════════════════
+function setupMobilePanels() {
+    const drawer = document.getElementById('mobile-panel-drawer');
+    const toggleBtn = document.getElementById('mobile-panel-toggle');
+    const matrixPanel = document.getElementById('matrix-panel');
+    const transformPanel = document.getElementById('transform-panel');
+
+    // Move panels into the drawer
+    if (matrixPanel && transformPanel && drawer) {
+        drawer.appendChild(matrixPanel);
+        drawer.appendChild(transformPanel);
+    }
+
+    // Toggle button behaviour
+    let isOpen = false;
+    toggleBtn.addEventListener('click', () => {
+        isOpen = !isOpen;
+        drawer.classList.toggle('open', isOpen);
+        toggleBtn.classList.toggle('panels-open', isOpen);
+        toggleBtn.querySelector('.toggle-icon').textContent = isOpen ? '✕' : '☰';
+    });
+
+    // Close drawer on canvas tap (so user can go back to interacting)
+    document.getElementById('scene').addEventListener('touchstart', () => {
+        if (isOpen) {
+            isOpen = false;
+            drawer.classList.remove('open');
+            toggleBtn.classList.remove('panels-open');
+            toggleBtn.querySelector('.toggle-icon').textContent = '☰';
+        }
+    }, { passive: true });
+
+    // Update bottom bar text for touch
+    const chips = document.querySelectorAll('.info-chip span:not(.chip-icon)');
+    if (chips.length >= 2) {
+        chips[0].textContent = 'Parmakla döndür';
+        chips[1].textContent = 'Çimdikle yakınlaş';
+    }
+}
+
 // ─── Starfield ───
 function createStarfield() {
-    const count = 2000;
+    const count = PERF.starfieldCount;
     const positions = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
     const colors = new Float32Array(count * 3);
@@ -114,7 +201,7 @@ function createStarfield() {
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const mat = new THREE.PointsMaterial({
-        size: 0.15,
+        size: isMobile ? 0.2 : 0.15,
         vertexColors: true,
         transparent: true,
         opacity: 0.8,
@@ -133,7 +220,9 @@ function createLights() {
     // Blue directional
     const blueLight = new THREE.DirectionalLight(0x00b4ff, 0.8);
     blueLight.position.set(-5, 8, 3);
-    blueLight.castShadow = true;
+    if (PERF.shadowsEnabled) {
+        blueLight.castShadow = true;
+    }
     scene.add(blueLight);
 
     // Orange directional
@@ -141,7 +230,7 @@ function createLights() {
     orangeLight.position.set(5, 6, -3);
     scene.add(orangeLight);
 
-    // Point lights
+    // Point lights — fewer on mobile
     const pBlue = new THREE.PointLight(0x00b4ff, 1.5, 20);
     pBlue.position.set(-3, 4, 2);
     scene.add(pBlue);
@@ -150,21 +239,22 @@ function createLights() {
     pOrange.position.set(3, 5, -2);
     scene.add(pOrange);
 
-    // Under-glow for projection plane
-    const pGreen = new THREE.PointLight(0x00ff88, 0.6, 15);
-    pGreen.position.set(0, -2, 0);
-    scene.add(pGreen);
+    if (!isMobile) {
+        // Under-glow only on desktop (saves a light on mobile)
+        const pGreen = new THREE.PointLight(0x00ff88, 0.6, 15);
+        pGreen.position.set(0, -2, 0);
+        scene.add(pGreen);
+    }
 }
 
 // ─── Grid ───
 function createGrid() {
     gridGroup = new THREE.Group();
     const gridSize = 16;
-    const divisions = 24;
+    const divisions = PERF.gridDivisions;
     const step = gridSize / divisions;
     const half = gridSize / 2;
 
-    // Create curved grid lines
     const gridMat = new THREE.LineBasicMaterial({
         color: 0x00b4ff,
         transparent: true,
@@ -179,7 +269,7 @@ function createGrid() {
         for (let j = 0; j <= divisions; j++) {
             const x = -half + j * step;
             const dist = Math.sqrt(x * x + z * z) / half;
-            const y = -dist * dist * 1.5; // Gravity curve
+            const y = -dist * dist * 1.5;
             points.push(new THREE.Vector3(x, y, z));
         }
         const geo = new THREE.BufferGeometry().setFromPoints(points);
@@ -232,20 +322,34 @@ function createGrid() {
 
 // ─── Original Dodecahedron ───
 function createDodecahedron() {
-    // Solid with glow shader
     const geo = new THREE.DodecahedronGeometry(1.2, 0);
-    const mat = new THREE.MeshPhongMaterial({
-        color: 0x003366,
-        emissive: 0x001a44,
-        specular: 0x00b4ff,
-        shininess: 80,
-        transparent: true,
-        opacity: 0.35,
-        side: THREE.DoubleSide,
-    });
+
+    // On mobile use MeshBasicMaterial (cheaper) with emissive-like color,
+    // on desktop use full Phong shading
+    let mat;
+    if (isMobile) {
+        mat = new THREE.MeshLambertMaterial({
+            color: 0x004488,
+            emissive: 0x001a44,
+            transparent: true,
+            opacity: 0.35,
+            side: THREE.DoubleSide,
+        });
+    } else {
+        mat = new THREE.MeshPhongMaterial({
+            color: 0x003366,
+            emissive: 0x001a44,
+            specular: 0x00b4ff,
+            shininess: 80,
+            transparent: true,
+            opacity: 0.35,
+            side: THREE.DoubleSide,
+        });
+    }
+
     dodecahedron = new THREE.Mesh(geo, mat);
     dodecahedron.position.set(-2.5, 2.0, 0);
-    dodecahedron.castShadow = true;
+    if (PERF.shadowsEnabled) dodecahedron.castShadow = true;
     scene.add(dodecahedron);
 
     // Wireframe overlay
@@ -260,24 +364,37 @@ function createDodecahedron() {
     scene.add(wireframeOriginal);
 
     // Glow sprite
-    addGlowSprite(dodecahedron.position, 0x00b4ff, 3.5);
+    addGlowSprite(dodecahedron.position, 0x00b4ff, isMobile ? 2.5 : 3.5);
 }
 
 // ─── Transformed Shape ───
 function createTransformedShape() {
     const geo = new THREE.DodecahedronGeometry(1.4, 0);
-    const mat = new THREE.MeshPhongMaterial({
-        color: 0x663300,
-        emissive: 0x331a00,
-        specular: 0xff8c00,
-        shininess: 100,
-        transparent: true,
-        opacity: 0.4,
-        side: THREE.DoubleSide,
-    });
+
+    let mat;
+    if (isMobile) {
+        mat = new THREE.MeshLambertMaterial({
+            color: 0x884400,
+            emissive: 0x331a00,
+            transparent: true,
+            opacity: 0.4,
+            side: THREE.DoubleSide,
+        });
+    } else {
+        mat = new THREE.MeshPhongMaterial({
+            color: 0x663300,
+            emissive: 0x331a00,
+            specular: 0xff8c00,
+            shininess: 100,
+            transparent: true,
+            opacity: 0.4,
+            side: THREE.DoubleSide,
+        });
+    }
+
     transformedDodec = new THREE.Mesh(geo, mat);
     transformedDodec.position.set(2.5, 4.0, 0);
-    transformedDodec.castShadow = true;
+    if (PERF.shadowsEnabled) transformedDodec.castShadow = true;
     scene.add(transformedDodec);
 
     // Wireframe
@@ -291,22 +408,24 @@ function createTransformedShape() {
     wireframeTransformed.position.copy(transformedDodec.position);
     scene.add(wireframeTransformed);
 
-    addGlowSprite(transformedDodec.position, 0xff8c00, 4.0);
+    addGlowSprite(transformedDodec.position, 0xff8c00, isMobile ? 3.0 : 4.0);
 }
 
 // ─── Glow Sprite ───
 function addGlowSprite(position, color, size) {
     const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
+    const texSize = isMobile ? 64 : 128;
+    canvas.width = texSize;
+    canvas.height = texSize;
     const ctx = canvas.getContext('2d');
-    const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    const half = texSize / 2;
+    const gradient = ctx.createRadialGradient(half, half, 0, half, half, half);
     const c = new THREE.Color(color);
     gradient.addColorStop(0, `rgba(${Math.floor(c.r*255)},${Math.floor(c.g*255)},${Math.floor(c.b*255)},0.4)`);
     gradient.addColorStop(0.4, `rgba(${Math.floor(c.r*255)},${Math.floor(c.g*255)},${Math.floor(c.b*255)},0.1)`);
     gradient.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 128, 128);
+    ctx.fillRect(0, 0, texSize, texSize);
 
     const tex = new THREE.CanvasTexture(canvas);
     const spriteMat = new THREE.SpriteMaterial({
@@ -323,8 +442,7 @@ function addGlowSprite(position, color, size) {
 
 // ─── Projection Plane ───
 function createProjectionPlane() {
-    // Glowing plane at the bottom
-    const planeGeo = new THREE.PlaneGeometry(8, 8, 32, 32);
+    const planeGeo = new THREE.PlaneGeometry(8, 8, isMobile ? 12 : 32, isMobile ? 12 : 32);
     const planeMat = new THREE.MeshBasicMaterial({
         color: 0x00ff88,
         transparent: true,
@@ -348,7 +466,7 @@ function createProjectionPlane() {
 
     const projGridGroup = new THREE.Group();
     const pSize = 8;
-    const pDiv = 16;
+    const pDiv = PERF.projGridDiv;
     const pStep = pSize / pDiv;
     const pHalf = pSize / 2;
 
@@ -379,25 +497,21 @@ function createProjectionPlane() {
     });
     projectionMesh = new THREE.Mesh(projGeo, projMat);
     projectionMesh.position.set(0, -2.95, 0);
-    projectionMesh.scale.set(1, 0.01, 1); // Flatten to 2D
+    projectionMesh.scale.set(1, 0.01, 1);
     scene.add(projectionMesh);
 }
 
 // ─── Energy Fields ───
 function createEnergyFields() {
-    // Blue energy spiral (from original shape)
     createEnergySpiral(-2.5, 2.0, 0, 0x00b4ff, 1);
-    // Orange energy spiral (from transformed shape)
     createEnergySpiral(2.5, 4.0, 0, 0xff8c00, -1);
-
-    // Connection beams between shapes
     createConnectionBeam();
 }
 
 function createEnergySpiral(cx, cy, cz, color, direction) {
     const points = [];
-    const spiralTurns = 3;
-    const segments = 120;
+    const spiralTurns = isMobile ? 2 : 3;
+    const segments = PERF.energySegments;
     const height = 3;
     const radius = 1.8;
 
@@ -424,8 +538,8 @@ function createEnergySpiral(cx, cy, cz, color, direction) {
 }
 
 function createConnectionBeam() {
+    const segments = isMobile ? 30 : 60;
     const points = [];
-    const segments = 60;
     for (let i = 0; i <= segments; i++) {
         const t = i / segments;
         const x = THREE.MathUtils.lerp(-2.5, 2.5, t);
@@ -448,19 +562,14 @@ function createConnectionBeam() {
 
 // ─── Transformation Arrows ───
 function createTransformationArrows() {
-    // Rotation arrow (blue, circular)
     createCurvedArrow(-2.5, 3.5, 0, 0x00b4ff, 'rotation');
-
-    // Scaling arrow (orange, outward)
     createStraightArrow(2.5, 4.0, 0, 0xff8c00, 'scale');
-
-    // Anti-gravity lift arrow (green, upward)
     createLiftArrow(0, -1, 0, 0x00ff88);
 }
 
 function createCurvedArrow(cx, cy, cz, color, type) {
     const points = [];
-    const segments = 40;
+    const segments = isMobile ? 20 : 40;
     const radius = 1.6;
     for (let i = 0; i <= segments; i++) {
         const t = i / segments;
@@ -481,7 +590,6 @@ function createCurvedArrow(cx, cy, cz, color, type) {
     const line = new THREE.Line(geo, mat);
     scene.add(line);
 
-    // Arrow tip
     const tipDir = new THREE.Vector3().subVectors(
         points[points.length - 1],
         points[points.length - 3]
@@ -510,8 +618,8 @@ function createStraightArrow(cx, cy, cz, color, type) {
 }
 
 function createLiftArrow(cx, cy, cz, color) {
-    // Multiple upward arrows
-    for (let i = 0; i < 5; i++) {
+    const count = isMobile ? 3 : 5;
+    for (let i = 0; i < count; i++) {
         const x = cx + (Math.random() - 0.5) * 4;
         const z = cz + (Math.random() - 0.5) * 4;
         const arrow = new THREE.ArrowHelper(
@@ -532,7 +640,7 @@ function createLiftArrow(cx, cy, cz, color) {
 
 // ─── Floating Polyhedra ───
 function createFloatingPolyhedra() {
-    const geometries = [
+    const allGeometries = [
         new THREE.IcosahedronGeometry(0.3, 0),
         new THREE.OctahedronGeometry(0.25, 0),
         new THREE.TetrahedronGeometry(0.3, 0),
@@ -541,7 +649,7 @@ function createFloatingPolyhedra() {
         new THREE.DodecahedronGeometry(0.2, 0),
     ];
 
-    const positions = [
+    const allPositions = [
         new THREE.Vector3(-5, 3, -3),
         new THREE.Vector3(5, 2, -4),
         new THREE.Vector3(-4, 5, 2),
@@ -549,6 +657,10 @@ function createFloatingPolyhedra() {
         new THREE.Vector3(0, 6, -3),
         new THREE.Vector3(-3, 1, 4),
     ];
+
+    const count = PERF.floatingShapeCount;
+    const geometries = allGeometries.slice(0, count);
+    const positions = allPositions.slice(0, count);
 
     geometries.forEach((geo, i) => {
         const isBlue = i % 2 === 0;
@@ -573,7 +685,7 @@ function createFloatingPolyhedra() {
 
 // ─── Particles ───
 function createParticles() {
-    const count = 500;
+    const count = PERF.particleCount;
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
 
@@ -594,7 +706,7 @@ function createParticles() {
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const mat = new THREE.PointsMaterial({
-        size: 0.04,
+        size: isMobile ? 0.06 : 0.04,
         vertexColors: true,
         transparent: true,
         opacity: 0.6,
@@ -614,7 +726,6 @@ function updateHUD(t) {
     const thetaRad = theta * Math.PI / 180;
     const phiRad = phi * Math.PI / 180;
 
-    // Rotation matrix values (Rz(theta) combined)
     const cosT = Math.cos(thetaRad);
     const sinT = Math.sin(thetaRad);
     const cosP = Math.cos(phiRad);
@@ -665,7 +776,7 @@ function updateHUD(t) {
     document.getElementById('force-val').textContent = `F = ${force.toFixed(2)} m/s²`;
 
     // Floating matrix values
-    const det = cosT * cosP; // Simplified determinant
+    const det = cosT * cosP;
     document.getElementById('det-val').textContent = Math.abs(det).toFixed(3);
     document.getElementById('trace-val').textContent = (cosT * cosP + cosT + cosP).toFixed(3);
     document.getElementById('norm-val').textContent = (Math.sqrt(cosT*cosT + sinT*sinT)).toFixed(3);
@@ -681,6 +792,7 @@ function animate() {
 
     const delta = clock.getDelta();
     time += delta;
+    frameCount++;
 
     // Update controls
     controls.update();
@@ -715,20 +827,22 @@ function animate() {
     // ── Projection plane pulse ──
     projectionPlane.material.opacity = 0.04 + Math.sin(time * 1.5) * 0.02;
 
-    // ── Animate energy lines ──
-    energyLines.forEach((el, idx) => {
-        const positions = el.mesh.geometry.attributes.position;
-        if (!positions) return;
-        const arr = positions.array;
-        for (let i = 0; i < el.basePoints.length; i++) {
-            const bp = el.basePoints[i];
-            arr[i * 3] = bp.x + Math.sin(time * 2 + i * 0.3) * 0.1;
-            arr[i * 3 + 1] = bp.y + Math.cos(time * 1.5 + i * 0.2) * 0.08;
-            arr[i * 3 + 2] = bp.z + Math.sin(time * 1.8 + i * 0.25) * 0.1;
-        }
-        positions.needsUpdate = true;
-        el.mesh.material.opacity = 0.2 + Math.sin(time * 2 + idx) * 0.15;
-    });
+    // ── Animate energy lines (skip every other frame on mobile) ──
+    if (!isMobile || frameCount % 2 === 0) {
+        energyLines.forEach((el, idx) => {
+            const positions = el.mesh.geometry.attributes.position;
+            if (!positions) return;
+            const arr = positions.array;
+            for (let i = 0; i < el.basePoints.length; i++) {
+                const bp = el.basePoints[i];
+                arr[i * 3] = bp.x + Math.sin(time * 2 + i * 0.3) * 0.1;
+                arr[i * 3 + 1] = bp.y + Math.cos(time * 1.5 + i * 0.2) * 0.08;
+                arr[i * 3 + 2] = bp.z + Math.sin(time * 1.8 + i * 0.25) * 0.1;
+            }
+            positions.needsUpdate = true;
+            el.mesh.material.opacity = 0.2 + Math.sin(time * 2 + idx) * 0.15;
+        });
+    }
 
     // ── Floating Polyhedra ──
     floatingShapes.forEach(s => {
@@ -751,16 +865,19 @@ function animate() {
         particles.rotation.y += 0.0003;
     }
 
-    // ── Grid warping ──
-    // Slight breathing of grid opacity
-    gridGroup.children.forEach((child, i) => {
-        if (child.material) {
-            child.material.opacity = 0.12 + Math.sin(time * 0.5 + i * 0.1) * 0.04;
-        }
-    });
+    // ── Grid warping (throttle on mobile) ──
+    if (!isMobile || frameCount % 3 === 0) {
+        gridGroup.children.forEach((child, i) => {
+            if (child.material) {
+                child.material.opacity = 0.12 + Math.sin(time * 0.5 + i * 0.1) * 0.04;
+            }
+        });
+    }
 
-    // ── Update HUD ──
-    updateHUD(time);
+    // ── Update HUD (throttled on mobile) ──
+    if (frameCount % PERF.hudUpdateInterval === 0) {
+        updateHUD(time);
+    }
 
     // ── Render ──
     renderer.render(scene, camera);
@@ -771,6 +888,7 @@ function onResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, PERF.maxPixelRatio));
 }
 
 // ─── Auto Rotate Toggle ───
