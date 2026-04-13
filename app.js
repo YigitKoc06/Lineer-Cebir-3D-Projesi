@@ -15,15 +15,15 @@ const isMobile = (() => {
 
 // Performance tiers
 const PERF = {
-    particleCount:   isMobile ? 150  : 500,
-    starfieldCount:  isMobile ? 600  : 2000,
-    maxPixelRatio:   isMobile ? 1.0  : 2,
+    particleCount:   isMobile ? 300  : 500,
+    starfieldCount:  isMobile ? 1200 : 2000,
+    maxPixelRatio:   isMobile ? 1.5  : 2,
     shadowsEnabled:  !isMobile,
-    gridDivisions:   isMobile ? 14   : 24,
-    energySegments:  isMobile ? 50   : 120,
-    projGridDiv:     isMobile ? 8    : 16,
-    floatingShapeCount: isMobile ? 3  : 6,
-    hudUpdateInterval:  isMobile ? 3  : 1,  // update HUD every N frames
+    gridDivisions:   isMobile ? 18   : 24,
+    energySegments:  isMobile ? 80   : 120,
+    projGridDiv:     isMobile ? 10   : 16,
+    floatingShapeCount: isMobile ? 4  : 6,
+    hudUpdateInterval:  isMobile ? 2  : 1,  // update HUD every N frames
 };
 
 // ─── Globals ───
@@ -65,9 +65,9 @@ function init() {
     // Renderer
     renderer = new THREE.WebGLRenderer({
         canvas: document.getElementById('scene'),
-        antialias: !isMobile, // disable AA on mobile for performance
+        antialias: true,
         alpha: false,
-        powerPreference: isMobile ? 'low-power' : 'high-performance',
+        powerPreference: 'high-performance',
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, PERF.maxPixelRatio));
@@ -324,18 +324,8 @@ function createGrid() {
 function createDodecahedron() {
     const geo = new THREE.DodecahedronGeometry(1.2, 0);
 
-    // On mobile use MeshBasicMaterial (cheaper) with emissive-like color,
-    // on desktop use full Phong shading
     let mat;
-    if (isMobile) {
-        mat = new THREE.MeshLambertMaterial({
-            color: 0x004488,
-            emissive: 0x001a44,
-            transparent: true,
-            opacity: 0.35,
-            side: THREE.DoubleSide,
-        });
-    } else {
+    {
         mat = new THREE.MeshPhongMaterial({
             color: 0x003366,
             emissive: 0x001a44,
@@ -364,7 +354,7 @@ function createDodecahedron() {
     scene.add(wireframeOriginal);
 
     // Glow sprite
-    addGlowSprite(dodecahedron.position, 0x00b4ff, isMobile ? 2.5 : 3.5);
+    addGlowSprite(dodecahedron.position, 0x00b4ff, isMobile ? 3.0 : 3.5);
 }
 
 // ─── Transformed Shape ───
@@ -372,15 +362,7 @@ function createTransformedShape() {
     const geo = new THREE.DodecahedronGeometry(1.4, 0);
 
     let mat;
-    if (isMobile) {
-        mat = new THREE.MeshLambertMaterial({
-            color: 0x884400,
-            emissive: 0x331a00,
-            transparent: true,
-            opacity: 0.4,
-            side: THREE.DoubleSide,
-        });
-    } else {
+    {
         mat = new THREE.MeshPhongMaterial({
             color: 0x663300,
             emissive: 0x331a00,
@@ -408,13 +390,13 @@ function createTransformedShape() {
     wireframeTransformed.position.copy(transformedDodec.position);
     scene.add(wireframeTransformed);
 
-    addGlowSprite(transformedDodec.position, 0xff8c00, isMobile ? 3.0 : 4.0);
+    addGlowSprite(transformedDodec.position, 0xff8c00, isMobile ? 3.5 : 4.0);
 }
 
 // ─── Glow Sprite ───
 function addGlowSprite(position, color, size) {
     const canvas = document.createElement('canvas');
-    const texSize = isMobile ? 64 : 128;
+    const texSize = 128;
     canvas.width = texSize;
     canvas.height = texSize;
     const ctx = canvas.getContext('2d');
