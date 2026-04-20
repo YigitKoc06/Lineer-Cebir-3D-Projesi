@@ -141,6 +141,19 @@
         </div>
     </div>
 
+    <!-- QR Code Button -->
+    <button id="qrBtn" class="qr-fab" title="QR Kodu Görüntüle" aria-label="QR Code">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+    </button>
+
+    <!-- QR Code Popup -->
+    <div id="qrOverlay" class="qr-overlay">
+        <div class="qr-popup">
+            <button id="qrClose" class="qr-close" aria-label="Kapat">&times;</button>
+            <img src="Matematik Topluluğu Projesi QR.png" alt="Proje QR Kodu" class="qr-image">
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="app.js"></script>

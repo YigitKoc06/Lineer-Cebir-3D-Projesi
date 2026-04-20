@@ -514,6 +514,107 @@ body:active {
     75% { transform: translateY(-6px) rotate(0.3deg); opacity: 0.8; }
 }
 
+/* ─── QR CODE BUTTON & POPUP ─── */
+.qr-fab {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 180, 255, 0.4);
+    background: rgba(5, 10, 30, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: var(--blue-glow);
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 16px rgba(0, 180, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.qr-fab:hover {
+    color: var(--orange-glow);
+    border-color: var(--orange-glow);
+    transform: scale(1.1);
+    box-shadow: 0 4px 20px rgba(255, 140, 0, 0.3);
+}
+
+.qr-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    will-change: opacity;
+}
+
+.qr-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.qr-popup {
+    position: relative;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 0 40px rgba(0, 180, 255, 0.3);
+    border: 2px solid var(--blue-glow);
+    transform: scale(0.85);
+    transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    will-change: transform;
+}
+
+.qr-overlay.visible .qr-popup {
+    transform: scale(1);
+}
+
+.qr-image {
+    display: block;
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+}
+
+.qr-close {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--orange-glow);
+    background: rgba(5, 10, 30, 0.95);
+    color: var(--orange-glow);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+.qr-close:hover {
+    background: var(--orange-glow);
+    color: #fff;
+}
+
 /* ═══════════════════════════════════════════════════════════
    MOBILE PANEL TOGGLE BUTTON
    ═══════════════════════════════════════════════════════════ */

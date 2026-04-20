@@ -888,5 +888,37 @@ function toggleAutoRotate() {
     chip.classList.toggle('active', autoRotate);
 }
 
+// ─── QR Code Popup Logic ───
+function setupQR() {
+    const qrOverlay = document.getElementById('qrOverlay');
+    const qrBtn = document.getElementById('qrBtn');
+    const qrClose = document.getElementById('qrClose');
+
+    if (!qrOverlay || !qrBtn || !qrClose) return;
+
+    qrBtn.addEventListener('click', () => {
+        qrOverlay.classList.add('visible');
+    });
+
+    qrClose.addEventListener('click', () => {
+        qrOverlay.classList.remove('visible');
+    });
+
+    qrOverlay.addEventListener('click', (e) => {
+        if (e.target === qrOverlay) {
+            qrOverlay.classList.remove('visible');
+        }
+    });
+
+    // Touch support for closing
+    qrClose.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // prevent double firing
+        qrOverlay.classList.remove('visible');
+    }, { passive: false });
+}
+
 // ─── Start ───
-window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('DOMContentLoaded', () => {
+    init();
+    setupQR();
+});
