@@ -213,6 +213,7 @@ function createStarfield() {
         opacity: 0.8,
         sizeAttenuation: true,
         blending: THREE.AdditiveBlending,
+        depthWrite: false,
     });
 
     scene.add(new THREE.Points(geo, mat));
@@ -420,6 +421,7 @@ function addGlowSprite(position, color, size) {
         map: tex,
         blending: THREE.AdditiveBlending,
         transparent: true,
+        depthWrite: false,
     });
     const sprite = new THREE.Sprite(spriteMat);
     sprite.position.copy(position);
@@ -700,6 +702,7 @@ function createParticles() {
         opacity: 0.6,
         blending: THREE.AdditiveBlending,
         sizeAttenuation: true,
+        depthWrite: false,
     });
 
     particles = new THREE.Points(geo, mat);
