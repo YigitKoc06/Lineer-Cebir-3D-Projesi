@@ -879,6 +879,12 @@ body:active {
     .info-chip.desktop-only {
         display: none;
     }
+
+    /* Move QR button to bottom left to avoid overlapping with side components */
+    .qr-fab {
+        right: auto;
+        left: 20px;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════
